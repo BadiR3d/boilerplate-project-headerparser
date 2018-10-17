@@ -1,32 +1,32 @@
-// server.js
-// where your node app starts
+var http = require('http');
 
-// init project
-var express = require('express');
-var app = express();
+http.createServer(function(req, res){
+    res.writeHead(200, {'Content-Type': 'application/json'});
 
-// enable CORS (https://en.wikipedia.org/wiki/Cross-origin_resource_sharing)
-// so that your API is remotely testable by FCC 
-var cors = require('cors');
-app.use(cors({optionSuccessStatus: 200}));  // some legacy browsers choke on 204
+    var address = req.headers['x-forwarded-for'] || 
+                req.connection.remoteAddress || 
+                req.socket.remoteAddress || 
+                null;
+    if(address && address.indexOf(',') != -1){
+        address = address.slice(0, address.indexOf(','));
+    }
 
-// http://expressjs.com/en/starter/static-files.html
-app.use(express.static('public'));
+    var lang = req.headers['accept-language'] || null;
+    if(lang && lang.indexOf(',') != -1){
+        lang = lang.slice(0, lang.indexOf(','));
+    }
+    
+    var soft = req.headers['user-agent'] || null;
+    if(soft && soft.indexOf('(') != -1){
+        soft = soft.slice(soft.indexOf('(') + 1, soft.indexOf(')'));
+    }    
 
-// http://expressjs.com/en/starter/basic-routing.html
-app.get("/", function (req, res) {
-  res.sendFile(__dirname + '/views/index.html');
-});
+    var headParsed = {
+        ipaddress: address,
+        language: lang,
+        software: soft
+    };
 
+    res.end(JSON.stringify(headParsed));
 
-// your first API endpoint... 
-app.get("/api/hello", function (req, res) {
-  res.json({greeting: 'hello API'});
-});
-
-
-
-// listen for requests :)
-var listener = app.listen(process.env.PORT, function () {
-  console.log('Your app is listening on port ' + listener.address().port);
-});
+}).listen(8080);
